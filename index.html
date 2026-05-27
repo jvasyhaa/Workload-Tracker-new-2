@@ -28,6 +28,27 @@
             --shadow-hover: 0 8px 30px rgba(0,0,0,0.7);
         }
 
+        [data-theme="light"] {
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f0f0f0;
+            --bg-input: #f8f8f8;
+            --border-color: #e0e0e0;
+            --border-hover: #c0c0c0;
+            --text-primary: #1a1a1a;
+            --text-secondary: #555555;
+            --text-muted: #888888;
+            --accent: #1a1a1a;
+            --accent-glow: rgba(0,0,0,0.05);
+            --todo: #6b7280;
+            --inprogress: #d97706;
+            --inreview: #7c3aed;
+            --completed: #059669;
+            --shadow: 0 4px 20px rgba(0,0,0,0.1);
+            --shadow-hover: 0 8px 30px rgba(0,0,0,0.15);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -1522,6 +1543,73 @@
             .view-doc-grid { grid-template-columns: 1fr; }
         }
 
+
+        /* Theme Toggle */
+        .theme-toggle {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 16px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .theme-toggle:hover {
+            border-color: var(--text-secondary);
+            color: var(--text-primary);
+            transform: rotate(15deg);
+        }
+        .theme-toggle i {
+            transition: transform 0.4s ease, opacity 0.3s ease;
+        }
+        .theme-toggle .fa-sun { 
+            position: absolute; 
+            opacity: 0; 
+            transform: rotate(-90deg) scale(0.5);
+        }
+        .theme-toggle .fa-moon { 
+            opacity: 1; 
+            transform: rotate(0) scale(1);
+        }
+        [data-theme="light"] .theme-toggle .fa-sun { 
+            opacity: 1; 
+            transform: rotate(0) scale(1);
+        }
+        [data-theme="light"] .theme-toggle .fa-moon { 
+            opacity: 0; 
+            transform: rotate(90deg) scale(0.5);
+        }
+        .login-theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 18px;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+        .login-theme-toggle:hover {
+            border-color: var(--text-secondary);
+            color: var(--text-primary);
+            transform: rotate(15deg);
+        }
+
     </style>
 <base target="_blank">
 </head>
@@ -1533,6 +1621,10 @@
 
     <!-- Login Screen -->
     <div class="login-screen" id="loginScreen">
+        <button class="login-theme-toggle" onclick="toggleTheme()" title="Ganti Tema">
+            <i class="fas fa-moon"></i>
+            <i class="fas fa-sun" style="position: absolute; opacity: 0;"></i>
+        </button>
         <div class="login-box">
             <div class="login-icon">
                 <i class="fas fa-shield-alt"></i>
@@ -1544,6 +1636,10 @@
                 <div class="form-group">
                     <label>Password Admin</label>
                     <input type="password" id="adminPassword" placeholder="Masukkan password..." required>
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                    <input type="checkbox" id="rememberMe" style="width: auto; cursor: pointer;">
+                    <label for="rememberMe" style="margin: 0; text-transform: none; cursor: pointer; color: var(--text-secondary);">Ingat password (Auto-login)</label>
                 </div>
                 <button type="submit" class="btn-login">
                     <i class="fas fa-lock" style="margin-right: 8px;"></i>
@@ -1561,6 +1657,9 @@
                 Admin: <strong>LIDM Koto Craft</strong><br>
                 <small>Hubungi admin untuk akses edit</small>
             </div>
+            <button class="btn-guest" id="clearSavedBtn" onclick="clearSavedLogin()" style="display: none; margin-top: 8px; color: #ef4444; border-color: rgba(239,68,68,0.3);">
+                <i class="fas fa-trash-alt" style="margin-right: 6px;"></i>Hapus Data Login Tersimpan
+            </button>
         </div>
     </div>
 
@@ -1582,6 +1681,10 @@
                     <button class="view-doc-btn" onclick="openViewDocModal()" title="Lihat Semua Dokumentasi">
                         <i class="fas fa-images"></i>
                         Galeri Dokumentasi
+                    </button>
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Ganti Tema (Malam/Terang)">
+                        <i class="fas fa-moon"></i>
+                        <i class="fas fa-sun" style="position: absolute; opacity: 0;"></i>
                     </button>
                     <div class="user-badge" id="userBadge">
                         <i class="fas fa-user"></i>
@@ -1849,6 +1952,20 @@
         let currentDocTaskId = null;
         let tempDocFiles = [];
 
+        // ==================== THEME MANAGEMENT ====================
+        function initTheme() {
+            const savedTheme = localStorage.getItem('workloadTheme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('workloadTheme', newTheme);
+            showToast(`Tema ${newTheme === 'dark' ? 'Malam' : 'Terang'} diaktifkan`, 'info');
+        }
+
         // ==================== AUTHENTICATION ====================
         function simpleHash(str) {
             return btoa(str).split('').reverse().join('').substring(0, 20);
@@ -1862,6 +1979,17 @@
             if (checkPassword(password)) {
                 currentUser = 'admin';
                 localStorage.setItem('workloadUser', 'admin');
+
+                // Save password if Remember Me is checked
+                const rememberMe = document.getElementById('rememberMe');
+                if (rememberMe && rememberMe.checked) {
+                    localStorage.setItem('workloadRemember', 'true');
+                    localStorage.setItem('workloadPass', simpleHash(password));
+                } else {
+                    localStorage.removeItem('workloadRemember');
+                    localStorage.removeItem('workloadPass');
+                }
+
                 showMainApp();
                 showToast('Login berhasil! Selamat datang, LIDM Koto Craft.', 'success');
                 return true;
@@ -1874,13 +2002,35 @@
         function loginAsGuest() {
             currentUser = 'guest';
             localStorage.setItem('workloadUser', 'guest');
+            // Clear remember me when logging in as guest
+            localStorage.removeItem('workloadRemember');
+            localStorage.removeItem('workloadPass');
             showMainApp();
             showToast('Anda masuk sebagai Guest (View Only)', 'info');
+        }
+
+        function clearSavedLogin() {
+            localStorage.removeItem('workloadRemember');
+            localStorage.removeItem('workloadPass');
+            localStorage.removeItem('workloadUser');
+            document.getElementById('clearSavedBtn').style.display = 'none';
+            showToast('Data login tersimpan telah dihapus', 'info');
+        }
+
+        function checkSavedLogin() {
+            const rememberMe = localStorage.getItem('workloadRemember');
+            const savedPass = localStorage.getItem('workloadPass');
+            if (rememberMe === 'true' && savedPass) {
+                const btn = document.getElementById('clearSavedBtn');
+                if (btn) btn.style.display = 'block';
+            }
         }
 
         function logout() {
             currentUser = null;
             localStorage.removeItem('workloadUser');
+            // Keep workloadRemember and workloadPass for auto-login next time
+            // unless user explicitly wants to clear everything
             document.getElementById('loginScreen').classList.remove('hidden');
             document.getElementById('mainApp').style.display = 'none';
             document.getElementById('adminPassword').value = '';
@@ -1916,6 +2066,19 @@
 
         function checkSession() {
             const savedUser = localStorage.getItem('workloadUser');
+            const rememberMe = localStorage.getItem('workloadRemember');
+            const savedPass = localStorage.getItem('workloadPass');
+
+            // Auto-login if Remember Me is enabled and password is saved
+            if (rememberMe === 'true' && savedPass) {
+                if (savedPass === simpleHash('TimKamiJuarasatu1')) {
+                    currentUser = 'admin';
+                    showMainApp();
+                    showToast('Auto-login berhasil! Selamat datang kembali.', 'success');
+                    return;
+                }
+            }
+
             if (savedUser) {
                 currentUser = savedUser;
                 showMainApp();
@@ -1930,10 +2093,28 @@
 
         // ==================== DATE & TIME ====================
         function updateDateTime() {
-            const now = new Date();
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('currentDate').textContent = now.toLocaleDateString('id-ID', options);
-            document.getElementById('currentTime').textContent = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            try {
+                const now = new Date();
+                const dateEl = document.getElementById('currentDate');
+                const timeEl = document.getElementById('currentTime');
+
+                if (dateEl) {
+                    const dateStr = now.toLocaleDateString('id-ID', { 
+                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                    });
+                    dateEl.textContent = dateStr;
+                }
+
+                if (timeEl) {
+                    const timeStr = now.toLocaleTimeString('id-ID', { 
+                        hour: '2-digit', minute: '2-digit', second: '2-digit',
+                        hour12: false
+                    });
+                    timeEl.textContent = timeStr;
+                }
+            } catch (e) {
+                console.error('DateTime update error:', e);
+            }
         }
 
         // ==================== DOCUMENTATION ====================
@@ -2540,8 +2721,10 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
             updateDateTime();
             setInterval(updateDateTime, 1000);
+            checkSavedLogin();
             checkSession();
             
             const dateInput = document.getElementById('taskDue');
